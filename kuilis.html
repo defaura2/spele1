@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rotten Food Feast</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #2c3e50;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            background: #78e08f;
+            border: 6px solid #38aa5a;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        #canvas {
+            background: #78e08f;
+            display: block;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 15px;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+            font-size: 20px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+        }
+
+        .ui-box {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 8px 15px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        #shop-btn {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: #ff793f;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #cd6133;
+            transition: all 0.1s ease;
+        }
+
+        #shop-btn:active {
+            transform: translateY(5px);
+            box-shadow: none;
+        }
+
+        /* Shop Modal */
+        #shop-modal {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 450px;
+            background: rgba(44, 58, 71, 0.95);
+            border: 4px solid #ff793f;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 0 25px rgba(0,0,0,0.7);
+            z-index: 10;
+        }
+
+        #shop-modal h2 {
+            margin-top: 0;
+            text-align: center;
+            color: #ff793f;
+            font-size: 28px;
+            border-bottom: 2px solid #ff793f;
+            padding-bottom: 10px;
+        }
+
+        .shop-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255,255,255,0.1);
+            margin: 12px 0;
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .item-details {
+            flex-grow: 1;
+            margin-right: 15px;
+        }
+
+        .item-name {
+            font-weight: bold;
+            font-size: 16px;
+            color: #f5cd79;
+        }
+
+        .item-desc {
+            font-size: 12px;
+            color: #ccc;
+            margin-top: 2px;
+        }
+
+        .buy-btn {
+            background: #2ed573;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            min-width: 90px;
+        }
+
+        .buy-btn:disabled {
+            background: #747d8c;
+            cursor: not-allowed;
+        }
+
+        #close-shop {
+            display: block;
+            margin: 15px auto 0;
+            background: #ea2027;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        /* Screens */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 5;
+            text-align: center;
+        }
+
+        .screen h1 {
+            font-size: 48px;
+            color: #ff793f;
+            margin-bottom: 10px;
+        }
+
+        .screen p {
+            font-size: 18px;
+            max-width: 500px;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .start-btn {
+            background: #2ed573;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #26af5f;
+            transition: 0.1s;
+        }
+
+        .start-btn:active {
+            transform: translateY(6px);
+            box-shadow: none;
+        }
+
+        #level-screen {
+            display: none;
+        }
+
+        #level-screen h1 {
+            color: #f5cd79;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <!-- Canvas Grid Gameboard -->
+        <canvas id="canvas" width="800" height="600"></canvas>
+
+        <!-- Dynamic UI -->
+        <div id="ui-layer">
+            <div class="ui-box">Points: <span id="ui-points">0</span></div>
+            <div class="ui-box">Level: <span id="ui-level">1</span></div>
+            <div class="ui-box">Target: <span id="ui-target">100</span></div>
+        </div>
+
+        <button id="shop-btn">🏪 Shop</button>
+
+        <!-- Main/Start Screen -->
+        <div id="start-screen" class="screen">
+            <h1>🐷 Rotten Food Feast</h1>
+            <p>You are a hungry pig who loves rotten food! Snarf down stinky trash to gain points. Avoid hitting the electric fences, and level up by reaching target goals. Buy upgrades from the shop to help you clear stages faster!</p>
+            <p style="font-size: 14px; color: #aaa;">Controls: Use <b>Arrow Keys</b> or <b>WASD</b> to move your pig.</p>
+            <button class="start-btn" id="btn-start">OINK! (Start)</button>
+        </div>
+
+        <!-- Level Up / Transition Screen -->
+        <div id="level-screen" class="screen">
+            <h1 id="level-title">Level Complete!</h1>
+            <p id="level-desc">Great job! You ate enough garbage to grow stronger.</p>
+            <button class="start-btn" id="btn-next-level">Next Level ➔</button>
+        </div>
+
+        <!-- Shop Screen Modal -->
+        <div id="shop-modal">
+            <h2>Farm Shop</h2>
+            
+            <div class="shop-item">
+                <div class="item-details">
+                    <div class="item-name">Piggy Shoes (Speed Upgrade)</div>
+                    <div class="item-desc">Increases pig movement speed (+1)</div>
+                </div>
+                <button class="buy-btn" id="buy-speed" data-cost="30">30 Pts</button>
+            </div>
+
+            <div class="shop-item">
+                <div class="item-details">
+                    <div class="item-name">Smell Radar (Spawn Rate)</div>
+                    <div class="item-desc">Causes food to spawn faster on the map</div>
+                </div>
+                <button class="buy-btn" id="buy-spawn" data-cost="50">50 Pts</button>
+            </div>
+
+            <div class="shop-item">
+                <div class="item-details">
+                    <div class="item-name">Golden Snout (Point Multiplier)</div>
+                    <div class="item-desc">Earn +1 bonus point per piece of food</div>
+                </div>
+                <button class="buy-btn" id="buy-multiplier" data-cost="80">80 Pts</button>
+            </div>
+
+            <button id="close-shop">Return to Game</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Game Configuration & States
+        let gameActive = false;
+        let shopOpen = false;
+
+        let points = 0;
+        let level = 1;
+        let targetPoints = 100;
+
+        // Upgrades tracking
+        let upgrades = {
+            speedLevel: 0,
+            spawnLevel: 0,
+            multiplierLevel: 0
+        };
+
+        // Costs Setup
+        const baseCosts = { speed: 30, spawn: 50, multiplier: 80 };
+
+        // Entities Setup
+        const pig = {
+            x: 400,
+            y: 300,
+            radius: 22,
+            baseSpeed: 4,
+            get speed() { return this.baseSpeed + upgrades.speedLevel; },
+            angle: 0
+        };
+
+        let foods = [];
+        let obstacles = [];
+        let lastFoodSpawn = 0;
+
+        // Input handler
+        const keys = {};
+        window.addEventListener('keydown', e => keys[e.key] = true);
+        window.addEventListener('keyup', e => keys[e.key] = false);
+
+        // UI Element Hooks
+        const startScreen = document.getElementById('start-screen');
+        const levelScreen = document.getElementById('level-screen');
+        const shopModal = document.getElementById('shop-modal');
+        const shopBtn = document.getElementById('shop-btn');
+        const closeShopBtn = document.getElementById('close-shop');
+
+        // Event Listeners for UI
+        document.getElementById('btn-start').addEventListener('click', startGame);
+        document.getElementById('btn-next-level').addEventListener('click', startNextLevel);
+        shopBtn.addEventListener('click', openShop);
+        closeShopBtn.addEventListener('click', closeShop);
+
+        // Shop Purchase Elements
+        const buySpeedBtn = document.getElementById('buy-speed');
+        const buySpawnBtn = document.getElementById('buy-spawn');
+        const buyMultiplierBtn = document.getElementById('buy-multiplier');
+
+        buySpeedBtn.addEventListener('click', () => buyUpgrade('speed'));
+        buySpawnBtn.addEventListener('click', () => buyUpgrade('spawn'));
+        buyMultiplierBtn.addEventListener('click', () => buyUpgrade('multiplier'));
+
+        function startGame() {
+            startScreen.style.display = 'none';
+            initLevel();
+            gameActive = true;
+            requestAnimationFrame(gameLoop);
+        }
+
+        function initLevel() {
+            targetPoints = level * 100;
+            foods = [];
+            obstacles = [];
+            pig.x = canvas.width / 2;
+            pig.y = canvas.height / 2;
+
+            // Generate Obstacles (Electric fences) based on level
+            const numObstacles = Math.min(2 + level, 8);
+            for(let i=0; i < numObstacles; i++) {
+                let obs;
+                let valid = false;
+                while(!valid) {
+                    obs = {
+                        x: Math.random() * (canvas.width - 150) + 50,
+                        y: Math.random() * (canvas.height - 150) + 50,
+                        w: Math.random() > 0.5 ? 80 : 20,
+                        h: Math.random() > 0.5 ? 20 : 80
+                    };
+                    // Ensure obstacle doesn't spawn right on top of the pig
+                    let distToPig = Math.hypot((obs.x + obs.w/2) - pig.x, (obs.y + obs.h/2) - pig.y);
+                    if(distToPig > 100) valid = true;
+                }
+                obstacles.push(obs);
+            }
+
+            // Populate initial foods
+            for(let i=0; i<5; i++) {
+                spawnFood();
+            }
+            updateUI();
+        }
+
+        function spawnFood() {
+            const types = [
+                { color: '#57606f', label: '🤢', bonus: 10, r: 12 }, // Rotten Apple
+                { color: '#2f3542', label: '🐟', bonus: 15, r: 14 }, // Fish bone
+                { color: '#747d8c', label: '🧀', bonus: 20, r: 15 }  // Moldy Cheese
+            ];
+            const type = types[Math.floor(Math.random() * types.length)];
+
+            let foodX, foodY, valid = false;
+            while(!valid) {
+                foodX = Math.random() * (canvas.width - 40) + 20;
+                foodY = Math.random() * (canvas.height - 40) + 20;
+                valid = true;
+                // Avoid placing inside obstacles
+                for(let obs of obstacles) {
+                    if(foodX > obs.x && foodX < obs.x + obs.w && foodY > obs.y && foodY < obs.y + obs.h) {
+                        valid = false;
+                        break;
+                    }
+                }
+            }
+
+            foods.push({
+                x: foodX,
+                y: foodY,
+                radius: type.r,
+                color: type.color,
+                label: type.label,
+                points: type.bonus
+            });
+        }
+
+        function updateUI() {
+            document.getElementById('ui-points').innerText = points;
+            document.getElementById('ui-level').innerText = level;
+            document.getElementById('ui-target').innerText = targetPoints;
+
+            // Update shop button states & text costs
+            updateShopButton(buySpeedBtn, 'speed');
+            updateShopButton(buySpawnBtn, 'spawn');
+            updateShopButton(buyMultiplierBtn, 'multiplier');
+        }
+
+        function updateShopButton(btn, type) {
+            let currentLevel = upgrades[type + 'Level'];
+            let cost = baseCosts[type] + (currentLevel * Math.floor(baseCosts[type] * 0.5));
+            btn.setAttribute('data-cost', cost);
+            btn.innerText = `${cost} Pts (Lvl ${currentLevel})`;
+            if (points < cost) {
+                btn.disabled = true;
+            } else {
+                btn.disabled = false;
+            }
+        }
+
+        function openShop() {
+            shopOpen = true;
+            shopModal.style.display = 'block';
+            updateUI();
+        }
+
+        function closeShop() {
+            shopOpen = false;
+            shopModal.style.display = 'none';
+        }
+
+        function buyUpgrade(type) {
+            let btn = document.getElementById(`buy-${type}`);
+            let cost = parseInt(btn.getAttribute('data-cost'));
+            if(points >= cost) {
+                points -= cost;
+                upgrades[type + 'Level']++;
+                updateUI();
+            }
+        }
+
+        function handleMovement() {
+            let dx = 0;
+            let dy = 0;
+
+            if (keys['ArrowUp'] || keys['w'] || keys['W']) dy = -pig.speed;
+            if (keys['ArrowDown'] || keys['s'] || keys['S']) dy = pig.speed;
+            if (keys['ArrowLeft'] || keys['a'] || keys['A']) dx = -pig.speed;
+            if (keys['ArrowRight'] || keys['d'] || keys['D']) dx = pig.speed;
+
+            if(dx !== 0 || dy !== 0) {
+                pig.angle = Math.atan2(dy, dx);
+                
+                // Temp position check for wall boundary collision
+                let nextX = Math.max(pig.radius, Math.min(canvas.width - pig.radius, pig.x + dx));
+                let nextY = Math.max(pig.radius, Math.min(canvas.height - pig.radius, pig.y + dy));
+
+                // Obstacle collision check
+                let collision = false;
+                for(let obs of obstacles) {
+                    // Check intersection circle vs rectangle
+                    let closestX = Math.max(obs.x, Math.min(nextX, obs.x + obs.w));
+                    let closestY = Math.max(obs.y, Math.min(nextY, obs.y + obs.h));
+                    let distance = Math.hypot(nextX - closestX, nextY - closestY);
+                    if(distance < pig.radius - 2) {
+                        collision = true;
+                        break;
+                    }
+                }
+
+                if(!collision) {
+                    pig.x = nextX;
+                    pig.y = nextY;
+                }
+            }
+        }
+
+        function checkCollisions() {
+            // Food collisions
+            for(let i = foods.length - 1; i >= 0; i--) {
+                let f = foods[i];
+                let dist = Math.hypot(pig.x - f.x, pig.y - f.y);
+                if(dist < pig.radius + f.radius) {
+                    // Score with point multiplier bonus
+                    let reward = f.points + (upgrades.multiplierLevel * 5);
+                    points += reward;
+                    foods.splice(i, 1);
+                    updateUI();
+
+                    // Check level completion requirement
+                    if(points >= targetPoints) {
+                        triggerLevelUp();
+                    }
+                }
+            }
+        }
+
+        function triggerLevelUp() {
+            gameActive = false;
+            levelScreen.style.display = 'flex';
+            document.getElementById('level-title').innerText = `Level ${level} Complete!`;
+            document.getElementById('level-desc').innerText = `Oink! Next milestone target is ${ (level + 1) * 100 } points. Go spend your stash at the shop!`;
+        }
+
+        function startNextLevel() {
+            level++;
+            levelScreen.style.display = 'none';
+            initLevel();
+            gameActive = true;
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Draw Pig Emojis natively using HTML5 Canvas text rendering
+        function drawPig() {
+            ctx.save();
+            ctx.translate(pig.x, pig.y);
+            ctx.rotate(pig.angle + Math.PI / 2); // adjust face angle orientation
+            ctx.font = `${pig.radius * 2}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🐷', 0, 0);
+            ctx.restore();
+        }
+
+        function drawFood() {
+            foods.forEach(f => {
+                ctx.font = `${f.radius * 2}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(f.label, f.x, f.y);
+                
+                // Decay/Stink waves indicators
+                ctx.strokeStyle = 'rgba(46, 204, 113, 0.2)';
+                ctx.beginPath();
+                ctx.arc(f.x, f.y, f.radius + 6, 0, Math.PI * 2);
+                ctx.stroke();
+            });
+        }
+
+        function drawObstacles() {
+            obstacles.forEach(obs => {
+                // Electric Outer posts
+                ctx.fillStyle = '#2c3e50';
+                ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+
+                // High-voltage warning visual lines
+                ctx.strokeStyle = '#f1c40f';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(obs.x, obs.y);
+                ctx.lineTo(obs.x + obs.w, obs.y + obs.h);
+                ctx.stroke();
+            });
+        }
+
+        function gameLoop(timestamp) {
+            if(!gameActive) return;
+
+            if(!shopOpen) {
+                handleMovement();
+                checkCollisions();
+
+                // Dynamic spawning rate affected by upgrades
+                let spawnInterval = Math.max(600, 2000 - (upgrades.spawnLevel * 300));
+                if(timestamp - lastFoodSpawn > spawnInterval && foods.length < 12) {
+                    spawnFood();
+                    lastFoodSpawn = timestamp;
+                }
+            }
+
+            // Clear Gameboard
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Redraw Scene
+            drawObstacles();
+            drawFood();
+            drawPig();
+
+            requestAnimationFrame(gameLoop);
+        }
+    </script>
+</body>
+</html>
