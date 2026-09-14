@@ -3,598 +3,860 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rotten Food Feast</title>
+    <title>Rotten Food Feast 3D</title>
     <style>
         body {
             margin: 0;
             padding: 0;
-            background: #2c3e50;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: #fff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
             overflow: hidden;
+            background-color: #1a1a1a;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             user-select: none;
         }
 
-        #game-container {
-            position: relative;
-            width: 800px;
-            height: 600px;
-            background: #78e08f;
-            border: 6px solid #38aa5a;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-
-        #canvas {
-            background: #78e08f;
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
             display: block;
         }
 
+        /* UI Overlay */
         #ui-layer {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
-            padding: 15px;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
             box-sizing: border-box;
+            padding: 20px;
+        }
+
+        .hud-panel {
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            border: 2px solid #ff8da1;
+            border-radius: 12px;
+            padding: 15px 25px;
+            color: white;
+            pointer-events: auto;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        #top-hud {
             display: flex;
             justify-content: space-between;
-            pointer-events: none;
+            align-items: center;
+            align-self: center;
+            width: 90%;
+            max-width: 800px;
+        }
+
+        .hud-stat {
             font-size: 20px;
             font-weight: bold;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+            text-shadow: 1px 1px 2px black;
         }
 
-        .ui-box {
-            background: rgba(0, 0, 0, 0.4);
-            padding: 8px 15px;
-            border-radius: 20px;
-            border: 1px solid rgba(255,255,255,0.2);
+        .hud-stat span {
+            color: #ff8da1;
+            font-size: 24px;
         }
 
-        #shop-btn {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            background: #ff793f;
-            color: white;
+        #shop-trigger {
+            background: linear-gradient(135deg, #ff5e7e, #ff8da1);
             border: none;
-            padding: 12px 24px;
+            color: white;
             font-size: 18px;
             font-weight: bold;
+            padding: 10px 20px;
             border-radius: 8px;
             cursor: pointer;
-            box-shadow: 0 5px 0 #cd6133;
-            transition: all 0.1s ease;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 10px rgba(255, 94, 126, 0.4);
         }
 
-        #shop-btn:active {
-            transform: translateY(5px);
-            box-shadow: none;
+        #shop-trigger:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 15px rgba(255, 94, 126, 0.6);
         }
 
         /* Shop Modal */
         #shop-modal {
-            display: none;
             position: absolute;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%);
-            width: 450px;
-            background: rgba(44, 58, 71, 0.95);
-            border: 4px solid #ff793f;
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 0 25px rgba(0,0,0,0.7);
-            z-index: 10;
+            transform: translate(-50%, -50%) scale(0.9);
+            width: 90%;
+            max-width: 500px;
+            background: rgba(20, 20, 20, 0.95);
+            border: 3px solid #ff8da1;
+            border-radius: 16px;
+            padding: 25px;
+            color: white;
+            display: none;
+            pointer-events: auto;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            z-index: 100;
+            opacity: 0;
+            transition: transform 0.3s, opacity 0.3s;
         }
 
-        #shop-modal h2 {
-            margin-top: 0;
-            text-align: center;
-            color: #ff793f;
-            font-size: 28px;
-            border-bottom: 2px solid #ff793f;
-            padding-bottom: 10px;
+        #shop-modal.active {
+            display: block;
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
         }
 
-        .shop-item {
+        .shop-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: rgba(255,255,255,0.1);
-            margin: 12px 0;
-            padding: 12px;
-            border-radius: 8px;
+            border-bottom: 2px solid #ff8da1;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
         }
 
-        .item-details {
-            flex-grow: 1;
-            margin-right: 15px;
-        }
-
-        .item-name {
+        .shop-title {
+            font-size: 26px;
             font-weight: bold;
-            font-size: 16px;
-            color: #f5cd79;
+            color: #ff8da1;
+            margin: 0;
         }
 
-        .item-desc {
-            font-size: 12px;
+        .close-shop {
+            background: none;
+            border: none;
+            color: #aaa;
+            font-size: 28px;
+            cursor: pointer;
+        }
+
+        .close-shop:hover {
+            color: white;
+        }
+
+        .shop-item {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .item-details h3 {
+            margin: 0 0 5px 0;
+            font-size: 18px;
+            color: #fff;
+        }
+
+        .item-details p {
+            margin: 0;
+            font-size: 13px;
             color: #ccc;
-            margin-top: 2px;
         }
 
         .buy-btn {
-            background: #2ed573;
+            background: #28a745;
             color: white;
             border: none;
-            padding: 8px 16px;
+            padding: 10px 15px;
             font-weight: bold;
-            border-radius: 5px;
+            border-radius: 6px;
             cursor: pointer;
-            min-width: 90px;
+            transition: background 0.2s;
+        }
+
+        .buy-btn:hover:not(:disabled) {
+            background: #218838;
         }
 
         .buy-btn:disabled {
-            background: #747d8c;
+            background: #555;
+            color: #888;
             cursor: not-allowed;
         }
 
-        #close-shop {
-            display: block;
-            margin: 15px auto 0;
-            background: #ea2027;
-            color: white;
-            border: none;
-            padding: 8px 20px;
-            font-weight: bold;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        /* Screens */
-        .screen {
+        /* Screen overlays */
+        .screen-overlay {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.85);
+            background: rgba(0,0,0,0.8);
             display: flex;
             flex-direction: column;
-            align-items: center;
             justify-content: center;
-            z-index: 5;
+            align-items: center;
+            color: white;
+            z-index: 10;
+            pointer-events: auto;
+        }
+
+        .screen-overlay h1 {
+            font-size: 48px;
+            color: #ff8da1;
+            margin-bottom: 10px;
             text-align: center;
         }
 
-        .screen h1 {
-            font-size: 48px;
-            color: #ff793f;
-            margin-bottom: 10px;
-        }
-
-        .screen p {
-            font-size: 18px;
-            max-width: 500px;
-            line-height: 1.6;
+        .screen-overlay p {
+            font-size: 20px;
             margin-bottom: 30px;
+            color: #ccc;
         }
 
-        .start-btn {
-            background: #2ed573;
+        .action-btn {
+            background: linear-gradient(135deg, #ff5e7e, #ff8da1);
+            border: none;
             color: white;
-            font-size: 24px;
+            font-size: 22px;
             font-weight: bold;
             padding: 15px 40px;
-            border: none;
             border-radius: 30px;
             cursor: pointer;
-            box-shadow: 0 6px 0 #26af5f;
-            transition: 0.1s;
+            box-shadow: 0 5px 15px rgba(255,94,126,0.4);
+            transition: transform 0.2s;
         }
 
-        .start-btn:active {
-            transform: translateY(6px);
-            box-shadow: none;
+        .action-btn:hover {
+            transform: scale(1.05);
         }
 
-        #level-screen {
+        #level-success-screen {
             display: none;
         }
 
-        #level-screen h1 {
-            color: #f5cd79;
+        /* Instructions */
+        .controls-hint {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255,255,255,0.6);
+            font-size: 14px;
+            text-align: center;
+            pointer-events: none;
         }
     </style>
+    <!-- Three.js from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 
-    <div id="game-container">
-        <!-- Canvas Grid Gameboard -->
-        <canvas id="canvas" width="800" height="600"></canvas>
+    <div id="canvas-container"></div>
 
-        <!-- Dynamic UI -->
-        <div id="ui-layer">
-            <div class="ui-box">Points: <span id="ui-points">0</span></div>
-            <div class="ui-box">Level: <span id="ui-level">1</span></div>
-            <div class="ui-box">Target: <span id="ui-target">100</span></div>
+    <div id="ui-layer">
+        <!-- TOP HUD -->
+        <div id="top-hud" class="hud-panel">
+            <div class="hud-stat">Level: <span id="hud-level">1</span></div>
+            <div class="hud-stat">Points: <span id="hud-points">0</span> / <span id="hud-target">50</span></div>
+            <button id="shop-trigger">🏪 Open Shop</button>
         </div>
 
-        <button id="shop-btn">🏪 Shop</button>
+        <div class="controls-hint">Use WASD or Arrow Keys to steer your Piggy! Avoid the neon electric fences.</div>
+    </div>
 
-        <!-- Main/Start Screen -->
-        <div id="start-screen" class="screen">
-            <h1>🐷 Rotten Food Feast</h1>
-            <p>You are a hungry pig who loves rotten food! Snarf down stinky trash to gain points. Avoid hitting the electric fences, and level up by reaching target goals. Buy upgrades from the shop to help you clear stages faster!</p>
-            <p style="font-size: 14px; color: #aaa;">Controls: Use <b>Arrow Keys</b> or <b>WASD</b> to move your pig.</p>
-            <button class="start-btn" id="btn-start">OINK! (Start)</button>
+    <!-- SHOP MODAL -->
+    <div id="shop-modal">
+        <div class="shop-header">
+            <h2 class="shop-title">Farm Upgrade Shop</h2>
+            <button class="close-shop" id="close-shop">&times;</button>
+        </div>
+        <div style="margin-bottom: 15px; font-weight: bold;">Your Balance: <span id="shop-balance" style="color:#ff8da1">0</span> Points</div>
+        
+        <div class="shop-item">
+            <div class="item-details">
+                <h3>Turbo Boots</h3>
+                <p>Increases running speed (+15%)</p>
+            </div>
+            <button class="buy-btn" id="buy-speed" data-cost="20">Cost: 20</button>
         </div>
 
-        <!-- Level Up / Transition Screen -->
-        <div id="level-screen" class="screen">
-            <h1 id="level-title">Level Complete!</h1>
-            <p id="level-desc">Great job! You ate enough garbage to grow stronger.</p>
-            <button class="start-btn" id="btn-next-level">Next Level ➔</button>
+        <div class="shop-item">
+            <div class="item-details">
+                <h3>Magnet Snout</h3>
+                <p>Increases food collection radius (+25%)</p>
+            </div>
+            <button class="buy-btn" id="buy-radius" data-cost="30">Cost: 30</button>
         </div>
 
-        <!-- Shop Screen Modal -->
-        <div id="shop-modal">
-            <h2>Farm Shop</h2>
-            
-            <div class="shop-item">
-                <div class="item-details">
-                    <div class="item-name">Piggy Shoes (Speed Upgrade)</div>
-                    <div class="item-desc">Increases pig movement speed (+1)</div>
-                </div>
-                <button class="buy-btn" id="buy-speed" data-cost="30">30 Pts</button>
+        <div class="shop-item">
+            <div class="item-details">
+                <h3>Golden Snout</h3>
+                <p>Earn +1 extra point per item eaten</p>
             </div>
-
-            <div class="shop-item">
-                <div class="item-details">
-                    <div class="item-name">Smell Radar (Spawn Rate)</div>
-                    <div class="item-desc">Causes food to spawn faster on the map</div>
-                </div>
-                <button class="buy-btn" id="buy-spawn" data-cost="50">50 Pts</button>
-            </div>
-
-            <div class="shop-item">
-                <div class="item-details">
-                    <div class="item-name">Golden Snout (Point Multiplier)</div>
-                    <div class="item-desc">Earn +1 bonus point per piece of food</div>
-                </div>
-                <button class="buy-btn" id="buy-multiplier" data-cost="80">80 Pts</button>
-            </div>
-
-            <button id="close-shop">Return to Game</button>
+            <button class="buy-btn" id="buy-multiplier" data-cost="40">Cost: 40</button>
         </div>
     </div>
 
+    <!-- START SCREEN -->
+    <div id="start-screen" class="screen-overlay">
+        <h1>🐖 ROTTEN FOOD FEAST 3D 🤢</h1>
+        <p>Steer the hungry pig, gather delicious rotten scraps, and unlock farm upgrades!</p>
+        <button class="action-btn" id="start-btn">Start Feast</button>
+    </div>
+
+    <!-- NEXT LEVEL SCREEN -->
+    <div id="level-success-screen" class="screen-overlay">
+        <h1 id="success-title">Level 1 Cleared!</h1>
+        <p>The farm is expanding and more electric fences are appearing...</p>
+        <button class="action-btn" id="next-lvl-btn">Enter Next Area</button>
+    </div>
+
     <script>
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-
-        // Game Configuration & States
-        let gameActive = false;
-        let shopOpen = false;
-
-        let points = 0;
-        let level = 1;
-        let targetPoints = 100;
-
-        // Upgrades tracking
-        let upgrades = {
-            speedLevel: 0,
-            spawnLevel: 0,
-            multiplierLevel: 0
+        // --- GAME STATE ---
+        const gameState = {
+            points: 0,
+            level: 1,
+            targetPoints: 50,
+            isOver: false,
+            isPlaying: false,
+            shopOpen: false,
+            // Upgrades
+            speedMultiplier: 1.0,
+            collectionRadius: 1.8,
+            pointBonus: 0,
+            // Stats costs
+            costs: { speed: 20, radius: 30, multiplier: 40 }
         };
 
-        // Costs Setup
-        const baseCosts = { speed: 30, spawn: 50, multiplier: 80 };
-
-        // Entities Setup
-        const pig = {
-            x: 400,
-            y: 300,
-            radius: 22,
-            baseSpeed: 4,
-            get speed() { return this.baseSpeed + upgrades.speedLevel; },
-            angle: 0
-        };
-
+        // --- SCENE SETUP VARIABLES ---
+        let scene, camera, renderer;
+        let pigMesh, pigNose, tailMesh;
+        let environmentGroup;
+        const keys = { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
+        
+        const arenaSize = 40; // Wall boundaries (-20 to 20)
         let foods = [];
         let obstacles = [];
-        let lastFoodSpawn = 0;
+        
+        // Configuration per level
+        const levelConfigs = {
+            1: { target: 50, obstaclesCount: 4, foodCount: 12 },
+            2: { target: 120, obstaclesCount: 8, foodCount: 14 },
+            3: { target: 220, obstaclesCount: 14, foodCount: 16 },
+            4: { target: 350, obstaclesCount: 20, foodCount: 18 },
+            5: { target: 500, obstaclesCount: 26, foodCount: 20 }
+        };
 
-        // Input handler
-        const keys = {};
-        window.addEventListener('keydown', e => keys[e.key] = true);
-        window.addEventListener('keyup', e => keys[e.key] = false);
+        // --- INITIALIZATION ---
+        function init() {
+            const container = document.getElementById('canvas-container');
+            
+            // 1. Create Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x1a2416); // Stylized Dark Mud/Grass
+            scene.fog = new THREE.FogExp2(0x1a2416, 0.015);
 
-        // UI Element Hooks
-        const startScreen = document.getElementById('start-screen');
-        const levelScreen = document.getElementById('level-screen');
-        const shopModal = document.getElementById('shop-modal');
-        const shopBtn = document.getElementById('shop-btn');
-        const closeShopBtn = document.getElementById('close-shop');
+            // 2. Create Camera
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            
+            // 3. Create Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
 
-        // Event Listeners for UI
-        document.getElementById('btn-start').addEventListener('click', startGame);
-        document.getElementById('btn-next-level').addEventListener('click', startNextLevel);
-        shopBtn.addEventListener('click', openShop);
-        closeShopBtn.addEventListener('click', closeShop);
+            // 4. Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambientLight);
 
-        // Shop Purchase Elements
-        const buySpeedBtn = document.getElementById('buy-speed');
-        const buySpawnBtn = document.getElementById('buy-spawn');
-        const buyMultiplierBtn = document.getElementById('buy-multiplier');
+            const hemiLight = new THREE.HemisphereLight(0xffeeb1, 0x080820, 0.4);
+            scene.add(hemiLight);
 
-        buySpeedBtn.addEventListener('click', () => buyUpgrade('speed'));
-        buySpawnBtn.addEventListener('click', () => buyUpgrade('spawn'));
-        buyMultiplierBtn.addEventListener('click', () => buyUpgrade('multiplier'));
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(20, 40, 20);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            dirLight.shadow.camera.near = 0.5;
+            dirLight.shadow.camera.far = 150;
+            const d = 30;
+            dirLight.shadow.camera.left = -d;
+            dirLight.shadow.camera.right = d;
+            dirLight.shadow.camera.top = d;
+            dirLight.shadow.camera.bottom = -d;
+            scene.add(dirLight);
 
-        function startGame() {
-            startScreen.style.display = 'none';
-            initLevel();
-            gameActive = true;
-            requestAnimationFrame(gameLoop);
+            // Create groups
+            environmentGroup = new THREE.Group();
+            scene.add(environmentGroup);
+
+            // Build permanent layout
+            buildFarmGround();
+            buildPiggy();
+
+            // Setup Event Listeners
+            window.addEventListener('resize', onWindowResize, false);
+            setupInput();
+            setupUI();
+
+            // Start loop
+            animate();
         }
 
-        function initLevel() {
-            targetPoints = level * 100;
+        // --- MODEL BUILDING (STYLIZED 3D GEOMETRIES) ---
+        function buildFarmGround() {
+            // Ground Mesh
+            const groundGeo = new THREE.PlaneGeometry(arenaSize, arenaSize);
+            const groundMat = new THREE.MeshStandardMaterial({ 
+                color: 0x2e3d26, 
+                roughness: 0.8,
+                metalness: 0.1
+            });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            // Ground grid details for visual depth
+            const grid = new THREE.GridHelper(arenaSize, 20, 0x3d5233, 0x33452b);
+            grid.position.y = 0.01;
+            scene.add(grid);
+
+            // Surrounding fences / walls
+            const wallMat = new THREE.MeshStandardMaterial({ color: 0x4a3b2c, roughness: 0.9 });
+            const postGeo = new THREE.BoxGeometry(0.8, 2.5, 0.8);
+            
+            for (let i = -arenaSize/2; i <= arenaSize/2; i += 10) {
+                // Top & Bottom walls
+                createWallPost(i, -arenaSize/2, postGeo, wallMat);
+                createWallPost(i, arenaSize/2, postGeo, wallMat);
+                // Left & Right walls
+                createWallPost(-arenaSize/2, i, postGeo, wallMat);
+                createWallPost(arenaSize/2, i, postGeo, wallMat);
+            }
+        }
+
+        function createWallPost(x, z, geo, mat) {
+            const post = new THREE.Mesh(geo, mat);
+            post.position.set(x, 1.25, z);
+            post.castShadow = true;
+            environmentGroup.add(post);
+        }
+
+        function buildPiggy() {
+            pigMesh = new THREE.Group();
+
+            const pinkMat = new THREE.MeshStandardMaterial({ color: 0xffa3b1, roughness: 0.6 });
+            const darkPinkMat = new THREE.MeshStandardMaterial({ color: 0xff758c, roughness: 0.6 });
+            const eyeMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2 });
+            const hoofMat = new THREE.MeshStandardMaterial({ color: 0x5a4548, roughness: 0.8 });
+
+            // Body (Boxy stylized look)
+            const bodyGeo = new THREE.BoxGeometry(1.4, 1.2, 2.0);
+            const body = new THREE.Mesh(bodyGeo, pinkMat);
+            body.position.y = 0.9;
+            body.castShadow = true;
+            body.receiveShadow = true;
+            pigMesh.add(body);
+
+            // Head
+            const headGeo = new THREE.BoxGeometry(1.1, 1.0, 1.0);
+            const head = new THREE.Mesh(headGeo, pinkMat);
+            head.position.set(0, 1.1, 1.3);
+            head.castShadow = true;
+            pigMesh.add(head);
+
+            // Snout / Nose
+            const snoutGeo = new THREE.BoxGeometry(0.6, 0.4, 0.4);
+            pigNose = new THREE.Mesh(snoutGeo, darkPinkMat);
+            pigNose.position.set(0, 0.9, 1.9);
+            pigNose.castShadow = true;
+            pigMesh.add(pigNose);
+
+            // Eyes
+            const eyeGeo = new THREE.BoxGeometry(0.15, 0.15, 0.15);
+            const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
+            leftEye.position.set(0.56, 1.2, 1.5);
+            const rightEye = leftEye.clone();
+            rightEye.position.x = -0.56;
+            pigMesh.add(leftEye, rightEye);
+
+            // Ears
+            const earGeo = new THREE.BoxGeometry(0.3, 0.4, 0.15);
+            const leftEar = new THREE.Mesh(earGeo, darkPinkMat);
+            leftEar.position.set(0.5, 1.6, 1.1);
+            leftEar.rotation.z = -0.2;
+            const rightEar = leftEar.clone();
+            rightEar.position.x = -0.5;
+            rightEar.rotation.z = 0.2;
+            pigMesh.add(leftEar, rightEar);
+
+            // Legs
+            const legGeo = new THREE.BoxGeometry(0.35, 0.5, 0.35);
+            const positions = [
+                [0.4, 0.25, 0.6], [-0.4, 0.25, 0.6],
+                [0.4, 0.25, -0.6], [-0.4, 0.25, -0.6]
+            ];
+            positions.forEach(pos => {
+                const leg = new THREE.Mesh(legGeo, pinkMat);
+                leg.position.set(pos[0], pos[1], pos[2]);
+                leg.castShadow = true;
+                
+                // Hoof bottom
+                const hoofGeo = new THREE.BoxGeometry(0.37, 0.1, 0.37);
+                const hoof = new THREE.Mesh(hoofGeo, hoofMat);
+                hoof.position.y = -0.22;
+                leg.add(hoof);
+
+                pigMesh.add(leg);
+            });
+
+            // Tail
+            const tailGeo = new THREE.BoxGeometry(0.1, 0.4, 0.1);
+            tailMesh = new THREE.Mesh(tailGeo, darkPinkMat);
+            tailMesh.position.set(0, 1.2, -1.05);
+            tailMesh.rotation.x = 0.5;
+            pigMesh.add(tailMesh);
+
+            pigMesh.position.set(0, 0, 0);
+            scene.add(pigMesh);
+        }
+
+        // --- MAP GENERATION PER LEVEL ---
+        function generateLevel() {
+            // Clear previous items
+            foods.forEach(f => scene.remove(f.mesh));
+            obstacles.forEach(o => scene.remove(o.mesh));
             foods = [];
             obstacles = [];
-            pig.x = canvas.width / 2;
-            pig.y = canvas.height / 2;
 
-            // Generate Obstacles (Electric fences) based on level
-            const numObstacles = Math.min(2 + level, 8);
-            for(let i=0; i < numObstacles; i++) {
-                let obs;
-                let valid = false;
-                while(!valid) {
-                    obs = {
-                        x: Math.random() * (canvas.width - 150) + 50,
-                        y: Math.random() * (canvas.height - 150) + 50,
-                        w: Math.random() > 0.5 ? 80 : 20,
-                        h: Math.random() > 0.5 ? 20 : 80
-                    };
-                    // Ensure obstacle doesn't spawn right on top of the pig
-                    let distToPig = Math.hypot((obs.x + obs.w/2) - pig.x, (obs.y + obs.h/2) - pig.y);
-                    if(distToPig > 100) valid = true;
-                }
-                obstacles.push(obs);
+            const config = levelConfigs[gameState.level] || { target: gameState.level * 120, obstaclesCount: 25, foodCount: 20 };
+            gameState.targetPoints = config.target;
+            
+            updateHUD();
+
+            // Reset pig position
+            pigMesh.position.set(0, 0, 0);
+            pigMesh.rotation.set(0, 0, 0);
+
+            // Generate Neon Toxic Obstacles (Electric Fences)
+            const obsMat = new THREE.MeshStandardMaterial({ 
+                color: 0x00ffff, 
+                emissive: 0x0088ff,
+                roughness: 0.2
+            });
+            const obsGeo = new THREE.BoxGeometry(2, 3, 2);
+
+            for(let i=0; i<config.obstaclesCount; i++) {
+                let pos = getRandomPosition(6); // Don't spawn exactly on center starting area
+                
+                const obs = new THREE.Mesh(obsGeo, obsMat);
+                obs.position.set(pos.x, 1.5, pos.z);
+                obs.castShadow = true;
+                scene.add(obs);
+                
+                obstacles.push({
+                    mesh: obs,
+                    radius: 1.5
+                });
             }
 
-            // Populate initial foods
-            for(let i=0; i<5; i++) {
-                spawnFood();
+            // Generate Rotten Foods
+            for(let i=0; i<config.foodCount; i++) {
+                spawnFoodItem();
             }
-            updateUI();
         }
 
-        function spawnFood() {
-            const types = [
-                { color: '#57606f', label: '🤢', bonus: 10, r: 12 }, // Rotten Apple
-                { color: '#2f3542', label: '🐟', bonus: 15, r: 14 }, // Fish bone
-                { color: '#747d8c', label: '🧀', bonus: 20, r: 15 }  // Moldy Cheese
-            ];
-            const type = types[Math.floor(Math.random() * types.length)];
+        function spawnFoodItem() {
+            // Types: 0 = Rotten Apple (Greenish slime), 1 = Rotten Cheese (Yellow-brown mold), 2 = Fishbone (White/Gray)
+            const type = Math.floor(Math.random() * 3);
+            let mesh;
 
-            let foodX, foodY, valid = false;
-            while(!valid) {
-                foodX = Math.random() * (canvas.width - 40) + 20;
-                foodY = Math.random() * (canvas.height - 40) + 20;
-                valid = true;
-                // Avoid placing inside obstacles
-                for(let obs of obstacles) {
-                    if(foodX > obs.x && foodX < obs.x + obs.w && foodY > obs.y && foodY < obs.y + obs.h) {
-                        valid = false;
-                        break;
-                    }
+            if (type === 0) {
+                // Rotten Apple
+                mesh = new THREE.Group();
+                const appleGeo = new THREE.SphereGeometry(0.4, 8, 8);
+                const appleMat = new THREE.MeshStandardMaterial({ color: 0x556b2f, roughness: 0.7 }); // Sickly green
+                const apple = new THREE.Mesh(appleGeo, appleMat);
+                apple.position.y = 0.4;
+                mesh.add(apple);
+            } else if (type === 1) {
+                // Rotten Cheese
+                const cheeseGeo = new THREE.ConeGeometry(0.4, 0.6, 4);
+                const cheeseMat = new THREE.MeshStandardMaterial({ color: 0xd2b48c, roughness: 0.9 }); // Moldy brown/yellow
+                mesh = new THREE.Mesh(cheeseGeo, cheeseMat);
+                mesh.position.y = 0.3;
+                mesh.rotation.x = Math.PI / 2;
+            } else {
+                // Fishbone
+                mesh = new THREE.Group();
+                const spineGeo = new THREE.BoxGeometry(0.1, 0.1, 0.8);
+                const boneMat = new THREE.MeshStandardMaterial({ color: 0xdddddd });
+                const spine = new THREE.Mesh(spineGeo, boneMat);
+                spine.position.y = 0.1;
+                mesh.add(spine);
+                // Ribs
+                for(let j = -0.2; j <= 0.2; j += 0.2) {
+                    const ribGeo = new THREE.BoxGeometry(0.5, 0.05, 0.05);
+                    const rib = new THREE.Mesh(ribGeo, boneMat);
+                    rib.position.set(0, 0.1, j);
+                    mesh.add(rib);
                 }
             }
 
+            let pos = getRandomPosition(3);
+            mesh.position.set(pos.x, mesh.position.y, pos.z);
+            mesh.castShadow = true;
+            scene.add(mesh);
+
             foods.push({
-                x: foodX,
-                y: foodY,
-                radius: type.r,
-                color: type.color,
-                label: type.label,
-                points: type.bonus
+                mesh: mesh,
+                type: type,
+                baseValue: (type + 1) * 5 // 5, 10, 15 points
             });
         }
 
-        function updateUI() {
-            document.getElementById('ui-points').innerText = points;
-            document.getElementById('ui-level').innerText = level;
-            document.getElementById('ui-target').innerText = targetPoints;
-
-            // Update shop button states & text costs
-            updateShopButton(buySpeedBtn, 'speed');
-            updateShopButton(buySpawnBtn, 'spawn');
-            updateShopButton(buyMultiplierBtn, 'multiplier');
+        function getRandomPosition(minDistanceFromCenter = 0) {
+            let x, z, dist;
+            do {
+                x = (Math.random() * (arenaSize - 6)) - (arenaSize/2 - 3);
+                z = (Math.random() * (arenaSize - 6)) - (arenaSize/2 - 3);
+                dist = Math.sqrt(x*x + z*z);
+            } while (dist < minDistanceFromCenter);
+            return { x: x, z: z };
         }
 
-        function updateShopButton(btn, type) {
-            let currentLevel = upgrades[type + 'Level'];
-            let cost = baseCosts[type] + (currentLevel * Math.floor(baseCosts[type] * 0.5));
-            btn.setAttribute('data-cost', cost);
-            btn.innerText = `${cost} Pts (Lvl ${currentLevel})`;
-            if (points < cost) {
-                btn.disabled = true;
-            } else {
-                btn.disabled = false;
-            }
+        // --- INPUTS & CONTROLS ---
+        function setupInput() {
+            window.addEventListener('keydown', e => { if(keys.hasOwnProperty(e.key)) keys[e.key] = true; });
+            window.addEventListener('keyup', e => { if(keys.hasOwnProperty(e.key)) keys[e.key] = false; });
         }
 
-        function openShop() {
-            shopOpen = true;
-            shopModal.style.display = 'block';
-            updateUI();
+        // --- HUD & INTERACTION ---
+        function setupUI() {
+            document.getElementById('start-btn').addEventListener('click', () => {
+                document.getElementById('start-screen').style.display = 'none';
+                gameState.isPlaying = true;
+                generateLevel();
+            });
+
+            document.getElementById('next-lvl-btn').addEventListener('click', () => {
+                document.getElementById('level-success-screen').style.display = 'none';
+                gameState.isPlaying = true;
+                generateLevel();
+            });
+
+            // Shop UI triggers
+            const shopModal = document.getElementById('shop-modal');
+            document.getElementById('shop-trigger').addEventListener('click', () => {
+                gameState.shopOpen = !gameState.shopOpen;
+                if(gameState.shopOpen) {
+                    shopModal.classList.add('active');
+                    updateShopButtons();
+                } else {
+                    shopModal.classList.remove('active');
+                }
+            });
+
+            document.getElementById('close-shop').addEventListener('click', () => {
+                gameState.shopOpen = false;
+                shopModal.classList.remove('active');
+            });
+
+            // Purchase Logic
+            document.getElementById('buy-speed').addEventListener('click', () => buyUpgrade('speed'));
+            document.getElementById('buy-radius').addEventListener('click', () => buyUpgrade('radius'));
+            document.getElementById('buy-multiplier').addEventListener('click', () => buyUpgrade('multiplier'));
         }
 
-        function closeShop() {
-            shopOpen = false;
-            shopModal.style.display = 'none';
+        function updateHUD() {
+            document.getElementById('hud-level').innerText = gameState.level;
+            document.getElementById('hud-points').innerText = gameState.points;
+            document.getElementById('hud-target').innerText = gameState.targetPoints;
+            document.getElementById('shop-balance').innerText = gameState.points;
+        }
+
+        function updateShopButtons() {
+            document.getElementById('shop-balance').innerText = gameState.points;
+            
+            // Speed Button
+            const btnSpeed = document.getElementById('buy-speed');
+            btnSpeed.disabled = gameState.points < gameState.costs.speed;
+            btnSpeed.innerText = `Cost: ${gameState.costs.speed}`;
+
+            // Radius Button
+            const btnRadius = document.getElementById('buy-radius');
+            btnRadius.disabled = gameState.points < gameState.costs.radius;
+            btnRadius.innerText = `Cost: ${gameState.costs.radius}`;
+
+            // Multiplier Button
+            const btnMulti = document.getElementById('buy-multiplier');
+            btnMulti.disabled = gameState.points < gameState.costs.multiplier;
+            btnMulti.innerText = `Cost: ${gameState.costs.multiplier}`;
         }
 
         function buyUpgrade(type) {
-            let btn = document.getElementById(`buy-${type}`);
-            let cost = parseInt(btn.getAttribute('data-cost'));
-            if(points >= cost) {
-                points -= cost;
-                upgrades[type + 'Level']++;
-                updateUI();
+            const cost = gameState.costs[type];
+            if (gameState.points >= cost) {
+                gameState.points -= cost;
+                
+                if (type === 'speed') {
+                    gameState.speedMultiplier += 0.15;
+                    gameState.costs.speed = Math.floor(gameState.costs.speed * 1.5);
+                } else if (type === 'radius') {
+                    gameState.collectionRadius += 0.4;
+                    gameState.costs.radius = Math.floor(gameState.costs.radius * 1.6);
+                } else if (type === 'multiplier') {
+                    gameState.pointBonus += 2;
+                    gameState.costs.multiplier = Math.floor(gameState.costs.multiplier * 1.7);
+                }
+
+                updateHUD();
+                updateShopButtons();
             }
+        }
+
+        // --- CORE GAME LOOP & MECHANICS ---
+        function animate(timestamp) {
+            requestAnimationFrame(animate);
+
+            if (gameState.isPlaying && !gameState.shopOpen) {
+                handleMovement();
+                checkCollisions();
+                animateEntities(timestamp);
+            }
+
+            // Smooth Camera Follow
+            if (pigMesh) {
+                const targetCamX = pigMesh.position.x;
+                const targetCamY = pigMesh.position.y + 16;
+                const targetCamZ = pigMesh.position.z - 12; // Cinematic look from behind/above
+
+                camera.position.x += (targetCamX - camera.position.x) * 0.08;
+                camera.position.y += (targetCamY - camera.position.y) * 0.08;
+                camera.position.z += (targetCamZ - camera.position.z) * 0.08;
+                
+                camera.lookAt(pigMesh.position.x, pigMesh.position.y + 1, pigMesh.position.z + 2);
+            }
+
+            renderer.render(scene, camera);
         }
 
         function handleMovement() {
-            let dx = 0;
-            let dy = 0;
+            let moveX = 0;
+            let moveZ = 0;
 
-            if (keys['ArrowUp'] || keys['w'] || keys['W']) dy = -pig.speed;
-            if (keys['ArrowDown'] || keys['s'] || keys['S']) dy = pig.speed;
-            if (keys['ArrowLeft'] || keys['a'] || keys['A']) dx = -pig.speed;
-            if (keys['ArrowRight'] || keys['d'] || keys['D']) dx = pig.speed;
+            if (keys.w || keys.ArrowUp) moveZ += 1;
+            if (keys.s || keys.ArrowDown) moveZ -= 1;
+            if (keys.a || keys.ArrowLeft) moveX += 1;
+            if (keys.d || keys.ArrowRight) moveX -= 1;
 
-            if(dx !== 0 || dy !== 0) {
-                pig.angle = Math.atan2(dy, dx);
+            if (moveX !== 0 || moveZ !== 0) {
+                // Calculate movement direction relative to global field
+                const baseSpeed = 0.15 * gameState.speedMultiplier;
                 
-                // Temp position check for wall boundary collision
-                let nextX = Math.max(pig.radius, Math.min(canvas.width - pig.radius, pig.x + dx));
-                let nextY = Math.max(pig.radius, Math.min(canvas.height - pig.radius, pig.y + dy));
+                // Add tiny bouncing/waddling animation during movement
+                const time = performance.now() * 0.01;
+                pigMesh.position.y = Math.abs(Math.sin(time)) * 0.2;
+                tailMesh.rotation.z = Math.sin(time * 2) * 0.4;
 
-                // Obstacle collision check
-                let collision = false;
-                for(let obs of obstacles) {
-                    // Check intersection circle vs rectangle
-                    let closestX = Math.max(obs.x, Math.min(nextX, obs.x + obs.w));
-                    let closestY = Math.max(obs.y, Math.min(nextY, obs.y + obs.h));
-                    let distance = Math.hypot(nextX - closestX, nextY - closestY);
-                    if(distance < pig.radius - 2) {
-                        collision = true;
-                        break;
-                    }
-                }
+                const nextX = pigMesh.position.x + (moveX * baseSpeed);
+                const nextZ = pigMesh.position.z + (moveZ * baseSpeed);
 
-                if(!collision) {
-                    pig.x = nextX;
-                    pig.y = nextY;
-                }
+                // Check arena boundary constraints
+                const maxCoord = arenaSize / 2 - 1.2;
+                if (nextX > -maxCoord && nextX < maxCoord) pigMesh.position.x = nextX;
+                if (nextZ > -maxCoord && nextZ < maxCoord) pigMesh.position.z = nextZ;
+
+                // Rotate pig mesh to face direction of movement smoothly
+                const targetAngle = Math.atan2(moveX, moveZ);
+                // Simple slerp rotation approximation
+                let diff = targetAngle - pigMesh.rotation.y;
+                while (diff < -Math.PI) diff += Math.PI * 2;
+                while (diff > Math.PI) diff -= Math.PI * 2;
+                pigMesh.rotation.y += diff * 0.25;
+            } else {
+                // Idle state pig breathing simulation
+                pigMesh.position.y = 0;
+                pigNose.position.y = 0.9 + Math.sin(performance.now() * 0.005) * 0.03;
             }
+        }
+
+        function animateEntities(timestamp) {
+            // Hover/Rotate food drops
+            foods.forEach((food, index) => {
+                food.mesh.rotation.y += 0.02;
+                // Subtle floating wave
+                food.mesh.position.y = (food.type === 1 ? 0.3 : 0.4) + Math.sin(timestamp * 0.003 + index) * 0.08;
+            });
         }
 
         function checkCollisions() {
-            // Food collisions
-            for(let i = foods.length - 1; i >= 0; i--) {
-                let f = foods[i];
-                let dist = Math.hypot(pig.x - f.x, pig.y - f.y);
-                if(dist < pig.radius + f.radius) {
-                    // Score with point multiplier bonus
-                    let reward = f.points + (upgrades.multiplierLevel * 5);
-                    points += reward;
-                    foods.splice(i, 1);
-                    updateUI();
+            const pigX = pigMesh.position.x;
+            const pigZ = pigMesh.position.z;
 
-                    // Check level completion requirement
-                    if(points >= targetPoints) {
-                        triggerLevelUp();
+            // 1. Food Collision
+            for (let i = foods.length - 1; i >= 0; i--) {
+                const food = foods[i];
+                const fX = food.mesh.position.x;
+                const fZ = food.mesh.position.z;
+                
+                const dist = Math.sqrt((pigX - fX)**2 + (pigZ - fZ)**2);
+                
+                // Uses upgraded collectionRadius snout
+                if (dist < gameState.collectionRadius) {
+                    // Eat Food!
+                    scene.remove(food.mesh);
+                    
+                    const scoreGained = food.baseValue + gameState.pointBonus;
+                    gameState.points += scoreGained;
+                    
+                    foods.splice(i, 1);
+                    updateHUD();
+
+                    // Instantly respawn new scrap somewhere else on field to maintain population
+                    spawnFoodItem();
+
+                    // Check level goal completion
+                    if (gameState.points >= gameState.targetPoints) {
+                        triggerLevelSuccess();
+                        break;
                     }
                 }
             }
-        }
 
-        function triggerLevelUp() {
-            gameActive = false;
-            levelScreen.style.display = 'flex';
-            document.getElementById('level-title').innerText = `Level ${level} Complete!`;
-            document.getElementById('level-desc').innerText = `Oink! Next milestone target is ${ (level + 1) * 100 } points. Go spend your stash at the shop!`;
-        }
+            // 2. Neon Fences Collision
+            for (let i = 0; i < obstacles.length; i++) {
+                const obs = obstacles[i];
+                const oX = obs.mesh.position.x;
+                const oZ = obs.mesh.position.z;
 
-        function startNextLevel() {
-            level++;
-            levelScreen.style.display = 'none';
-            initLevel();
-            gameActive = true;
-            requestAnimationFrame(gameLoop);
-        }
-
-        // Draw Pig Emojis natively using HTML5 Canvas text rendering
-        function drawPig() {
-            ctx.save();
-            ctx.translate(pig.x, pig.y);
-            ctx.rotate(pig.angle + Math.PI / 2); // adjust face angle orientation
-            ctx.font = `${pig.radius * 2}px sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('🐷', 0, 0);
-            ctx.restore();
-        }
-
-        function drawFood() {
-            foods.forEach(f => {
-                ctx.font = `${f.radius * 2}px sans-serif`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(f.label, f.x, f.y);
-                
-                // Decay/Stink waves indicators
-                ctx.strokeStyle = 'rgba(46, 204, 113, 0.2)';
-                ctx.beginPath();
-                ctx.arc(f.x, f.y, f.radius + 6, 0, Math.PI * 2);
-                ctx.stroke();
-            });
-        }
-
-        function drawObstacles() {
-            obstacles.forEach(obs => {
-                // Electric Outer posts
-                ctx.fillStyle = '#2c3e50';
-                ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
-
-                // High-voltage warning visual lines
-                ctx.strokeStyle = '#f1c40f';
-                ctx.lineWidth = 3;
-                ctx.beginPath();
-                ctx.moveTo(obs.x, obs.y);
-                ctx.lineTo(obs.x + obs.w, obs.y + obs.h);
-                ctx.stroke();
-            });
-        }
-
-        function gameLoop(timestamp) {
-            if(!gameActive) return;
-
-            if(!shopOpen) {
-                handleMovement();
-                checkCollisions();
-
-                // Dynamic spawning rate affected by upgrades
-                let spawnInterval = Math.max(600, 2000 - (upgrades.spawnLevel * 300));
-                if(timestamp - lastFoodSpawn > spawnInterval && foods.length < 12) {
-                    spawnFood();
-                    lastFoodSpawn = timestamp;
+                const dist = Math.sqrt((pigX - oX)**2 + (pigZ - oZ)**2);
+                if (dist < obs.radius) {
+                    // Bounce back / Repel from obstacle
+                    const angle = Math.atan2(pigZ - oZ, pigX - oX);
+                    pigMesh.position.x = oX + Math.cos(angle) * obs.radius;
+                    pigMesh.position.z = oZ + Math.sin(angle) * obs.radius;
                 }
             }
-
-            // Clear Gameboard
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Redraw Scene
-            drawObstacles();
-            drawFood();
-            drawPig();
-
-            requestAnimationFrame(gameLoop);
         }
+
+        function triggerLevelSuccess() {
+            gameState.isPlaying = false;
+            document.getElementById('success-title').innerText = `Level ${gameState.level} Cleared! 🎉`;
+            document.getElementById('level-success-screen').style.display = 'flex';
+            gameState.level += 1;
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // Initialize engine on DOM Load
+        window.onload = init;
     </script>
 </body>
 </html>
